@@ -1,5 +1,4 @@
 import sys
-from time import time
 
 from algoritmia.datastructures.digraphs import UndirectedGraph
 from algoritmia.datastructures.queues import Fifo
@@ -8,7 +7,6 @@ from labyrinthviewer import LabyrinthViewer
 
 
 def load_labyrinth(fichero):
-    start_time = time()
     def recorrido_anchura(grafo: "Graph<T>", v_inicial: "T", inversa: "bool") -> "List<(T,T)>":
         aristas = []
         queue = Fifo()
@@ -36,26 +34,57 @@ def load_labyrinth(fichero):
                         seen.add(suc)
                         queue.push((v, suc))
         return aristas
+
     def buscarPared(grafo: "Graph<T>")-> "List<(T,T)>":
         pesoCamino = matriz[filas-1][nColumnas-1]
-        print('CAMINO CORTO CON PARED: ', pesoCamino)
         pesoSP = pesoCamino
-        pared = list()
+        paredes = list()
         for i in range(0, filas):
             for j in range(0, nColumnas):
                 if(i+1<=filas-1):
                     spOpcional = matriz[i][j] + mInversa[i + 1][j]
                     if (spOpcional < pesoCamino and spOpcional < pesoSP and (i + 1, j) not in grafo.succs((i, j))):
                         pesoSP = matriz[i][j] + mInversa[i+1][j] + 1 #+1 po el paso extra de pasar la pared
-                        print(pesoSP)
-                        pared = [(i, j), (i + 1, j)]
-                if (j + 1 <= nColumnas - 1):
-                    spOpcional = matriz[i][j] + mInversa[i][j+1]
+                        if (pesoSP > spOpcional):
+                            paredes.clear()
+                            paredes.append([(i, j), (i + 1, j)])
+                        else:
+                            if(pesoSP == spOpcional):
+                                paredes.append([(i, j), (i + 1, j)])
+                if (j+1 <= nColumnas - 1):
+                    spOpcional = matriz[i][j] + mInversa[i][j+1]+1
                     if (spOpcional < pesoCamino and spOpcional < pesoSP and (i, j+1) not in grafo.succs((i, j))):
                         pesoSP = matriz[i][j] + mInversa[i][j+1] + 1 #+1 por el paso extra de pasar la pared
-                        print(pesoSP)
-                        pared = [(i, j), (i, j+1)]
-        return pared
+                        if (pesoSP > spOpcional):
+                            paredes.clear()
+                            paredes.append([(i, j), (i, j+1)])
+                        else:
+                            if(pesoSP == spOpcional):
+                                paredes.append([(i, j), (i, j+1)])
+
+        while(len(paredes)!=1):
+            if(paredes[0][0][0] != paredes[1][0][0] or paredes[0][1][0] != paredes[1][1][0]):
+                if(paredes[0][0][0]==paredes[1][0][0]):
+                    if(paredes[0][1][0] != paredes[1][1][0]):
+                        if (paredes[0][1][0] > paredes[1][1][0]):
+                            paredes.pop(0)
+                        else:
+                            paredes.pop(1)
+                else:
+                    if (paredes[0][0][0] < paredes[1][0][0]):
+                        paredes.pop(0)
+                    else:
+                        paredes.pop(1)
+            else:
+
+                if (paredes[0][0][1]<paredes[1][0][1]):
+                    paredes.pop(1)
+                else:
+                    paredes.pop(0)
+        print(paredes[0][0][0], paredes[0][0][1],paredes[0][1][0],paredes[0][1][1])
+        print(pesoCamino)
+        print(pesoSP)
+        return paredes
 
     f = open(fichero, 'r')
     pasillos = []
@@ -87,18 +116,16 @@ def load_labyrinth(fichero):
     inicio = recorrido_anchura(grafo, (0,0), False)
     fin = recorrido_anchura(grafo, (filas - 1, columnas - 1), True)
     paredes = buscarPared(grafo)
-    print(mInversa)
-    print(matriz)
-    print(paredes)
-    #vertices = recorrido_aristas_anchura(grafo, (0, 0))
-    #verticesFinal = recorrido_aristas_anchura(grafo, (filas-1, columnas-1))
 
-    recorrido_corto = recuperador_camino(inicio, (filas - 1, columnas - 1))
-    elapsed_time = time() - start_time
-    print("Tiempo de ejecucion: %.10f segundos." % elapsed_time)
-    lv = LabyrinthViewer(grafo, canvas_width=600, canvas_height=400, margin=10)
-    lv.add_path(recorrido_corto, color="blue")
-    #lv.run()
+    if (grafico):
+        recorrido_inicio = recuperador_camino(inicio, (paredes[0][0][0], paredes[0][0][1]))
+        recorrido_fin = recuperador_camino(fin, (paredes[0][1][0], paredes[0][1][1]))
+        lv = LabyrinthViewer(grafo, canvas_width=600, canvas_height=400, margin=10)
+        lv.add_path(recorrido_inicio, color="red")
+        lv.add_path(recorrido_fin, color="red")
+        lv.add_marked_cell((paredes[0][0][0], paredes[0][0][1]),color="red")
+        lv.add_marked_cell((paredes[0][1][0], paredes[0][1][1]),color="red")
+        lv.run()
 
     return grafo
 
@@ -141,19 +168,11 @@ def recorrido_aristas_anchura(grafo: "Graph<T>", v_inicial: "T") -> "List<(T,T)>
 
 
 if __name__ == "__main__":
+    fichero = sys.argv[1]
+    if(len(sys.argv)==3):
+        grafico=True
+    else:
+        grafico=False
+    grafo = load_labyrinth(fichero)
 
-
-    # print("Número de argumentos con los que has llamado al programa:", len(sys.argv))
-    # print("El nombre del programa:", sys.argv[0])
-    # for argumento in sys.argv[1:]:
-    # print(argumento)
-
-    graph = load_labyrinth('pruebas/laberinto-15x24.i')
-    # vertices = recorrido_aristas_anchura(graph, (0,0))
-    # recorrido = path(graph, (0, 0), (9, 19))
-    # recorrido_corto = shortest_path(graph, (0, 0), (9, 19))
-    # lv = LabyrinthViewer(graph, canvas_width=600, canvas_height=400, margin=10)
-    # lv.add_path(recorrido, color="blue")
-    # lv.add_path(recorrido_corto, color="red")
-    # lv.run()
 
