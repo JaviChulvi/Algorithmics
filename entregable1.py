@@ -18,7 +18,6 @@ def load_labyrinth(fichero):
         while len(queue) > 0:
             u, v = queue.pop()
             aristas.append((u, v))
-            #peso=len(recuperador_camino(aristas, v))-1
             if(inversa):
                 peso = mInversa[v[0]][v[1]]
             else:
@@ -143,29 +142,6 @@ def recuperador_camino(lista_aristas: "List<(T,T)>", v: "T") -> "List<T>":
         # Invierte el camino pues lo hemos obtenido al revés
         camino.reverse()
         return camino
-
-
-
-def shortest_path(lab: "Graph<T>", source: "T", target: "T") -> "T | None":
-    vertices = recorrido_aristas_anchura(lab, source)
-    return recuperador_camino(vertices, target)
-
-
-def recorrido_aristas_anchura(grafo: "Graph<T>", v_inicial: "T") -> "List<(T,T)>":
-    aristas = []
-    queue = Fifo()
-    seen = set()
-    queue.push((v_inicial, v_inicial))
-    seen.add(v_inicial)
-    while len(queue) > 0:
-        u, v = queue.pop()
-        aristas.append((u, v))
-        for suc in grafo.succs(v):
-            if suc not in seen:
-                seen.add(suc)
-                queue.push((v, suc))
-    return aristas
-
 
 if __name__ == "__main__":
     fichero = sys.argv[1]
