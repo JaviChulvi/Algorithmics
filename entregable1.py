@@ -3,7 +3,7 @@ import sys
 from algoritmia.datastructures.digraphs import UndirectedGraph
 from algoritmia.datastructures.queues import Fifo
 
-from labyrinthviewer import LabyrinthViewer
+from Tema2.labyrinthviewer import LabyrinthViewer
 
 
 def load_labyrinth(fichero):
