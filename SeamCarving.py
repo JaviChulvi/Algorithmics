@@ -1,6 +1,8 @@
 #####################################################################################################
 #  entregable5.py
 #
+#  Version 1.2: corregido bug:
+#     - La imagen resultante no se guardaba como gif.
 #  Version 1.1: corregidos dos bugs:
 #     - Ahora el programa también funciona si el método get de la clase tkinter.PhotoImage
 #       devuelve una tupla. Antes solo funcionaba si devolvía una cadena.
@@ -96,7 +98,7 @@ class ColorImage:
                 for c in range(self.cols):
                     if isinstance(self.imageOrig.get(c, r), str):
                         cr, cg, cb = [int(v) for v in self.imageOrig.get(c, r).split()]
-                    else: # en algunas versiones, el get devuelve una tupla
+                    else:  # --------- en algunas versiones de TkInter, el get devuelve una tupla ------------
                         cr, cg, cb = [int(v) for v in self.imageOrig.get(c, r)]
                     self.m[r][c] = PixelColor(cr, cg, cb)
         elif isinstance(obj, List) and isinstance(obj[0], List) and isinstance(obj[0][0], PixelColor):
@@ -199,7 +201,7 @@ def main():
 
     # Muestra la nueva imagen reescalada
     tki_reduced_image = reduced_image.get_tkinter_image()
-    tki_reduced_image.write(output_filename)
+    tki_reduced_image.write(output_filename, format='gif')
     canvas.create_image((color_image.cols - final_width) / 2, color_image.rows,
                         image=tki_reduced_image, anchor="nw")
 
@@ -215,59 +217,56 @@ def main():
 # la posición k, contiene el índice de la columna en la que se encuentra la veta en
 # la fila k.
 def find_lower_energy_seam(m: MatrixGrayImage) -> List[int]:
+
+    mem = {}  # GUARDA LA COLUMNA ANTERIOR PARA LLEGAR A ESTE PUNTO CON MENOR PESO
+
     rows = len(m)
     cols = len(m[0])
-    mem_weights = []
-    mem_paths = [[]]
+    for i in range(cols):
+        mem[0, i] = (m[0][i], i)
 
-    # Crear la lista de pesos (en este caso el peso de un camino es su energía)
-    for c in range(cols):
-        # print(m[0][c])
-        mem_weights.append(m[0][c])
-        mem_paths[0].append(-1)
+    for i in range(rows-1):
+        for j in range(cols):
+            if j == 0:
+                col = j
+                top = j + 2
+            elif j+1 > cols - 1:
+                col = j - 1
+                top = j + 1
+            else:
+                col = j - 1
+                top = j + 2
+            row = i + 1
+            while col < top:
+                if (row, col) in mem:
+                    # SI LO HE PROCESADO COMPARO EL PESO ANTERIOR CON EL CALCULADO "ACTUAL"
+                    if mem[row, col][0] > (mem[i, j][0] + m[row][col]):
+                        mem[row, col] = (mem[i, j][0] + m[row][col], j)
 
-    # Sacar el camino mínimo de cada fila con respecto a la anterior
-    for r in range(1, rows):
-        mem_prev = mem_weights
-        mem_weights = [0] * cols
-        mem_paths.append([])
-        for c in range(cols):
-            min_val = mem_prev[c]
-            min_ind = c
-            if c-1 >= 0:
-                if mem_prev[c-1] < min_val:
-                    min_val = mem_prev[c-1]
-                    min_ind = c-1
-            if c+1 < cols:
-                if mem_prev[c+1] < min_val:
-                    min_val = mem_prev[c+1]
-                    min_ind = c+1
+                else:
+                    # SI NO LO HE PROCESADO LO METO DIRECTAMENTE
+                    mem[row, col] = (mem[i, j][0] + m[row][col], j)
+                col += 1
 
-            mem_weights[c] = min_val + m[r][c]
-            mem_paths[r].append(min_ind)
+    minimo = mem[rows-1, 0][0]
+    columna = mem[rows-1, 0][1]
+    for col in range(1, cols):
+        if mem[rows-1, col][0] < minimo:
+            minimo = mem[rows-1, col][0]
+            columna = mem[rows - 1, col][1]  # 0 => col
 
-    # Calcular el camino con menos energía según su peso
-    min_weight = mem_weights[0]
-    c = 0
-    for i in range(1, cols):
-        if mem_weights[i] < min_weight:
-            min_weight = mem_weights[i]
-            c = i
-
-    # Recorrer el camino desde el final hasta el principio (y hacer reverse para devolver el camino real)
-    seam = [c]
+    sol = [columna]
     for r in range(rows-1, 0, -1):
-        c = mem_paths[r][c]
-        seam.append(c)
-    seam.reverse()
-    print(min_weight)
-    # print(seam)
-    return seam
+        columna = mem[r, columna][1]
+        sol.append(columna)
+    sol.reverse()
+
+    return sol
+
 
 ####################################################################################
 # No es necesario modificar el código que hay DEBAJO de esta línea
 ####################################################################################
-
 
 if __name__ == "__main__":
     main()
